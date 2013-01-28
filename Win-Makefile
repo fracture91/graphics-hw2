@@ -1,0 +1,7 @@
+hw2: hw2.cpp vshader1.glsl fshader1.glsl Angel.h CheckError.h\
+		mat.h vec.h textfile.h textfile.cpp InitShader.cpp
+	cl /EHsc hw2.cpp glew32s.lib
+
+clean:
+	del hw2.exe *.obj
+
