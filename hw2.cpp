@@ -1,3 +1,9 @@
+#ifdef _WIN32
+	#include "win_dirent.h"
+#else
+	#include "unix_dirent.h"
+#endif
+#include <vector>
 #include "Angel.h"
 #include "Mesh.hpp"
 #include "PLYReader.hpp"
@@ -195,6 +201,24 @@ void keyboard(unsigned char key, int x, int y) {
 	}
 }
 
+vector<string>* getFileNames(const char* path) {
+	vector<string>* names = new vector<string>();
+	DIR* directory;
+	dirent* entry;
+	if((directory = opendir(path)) != NULL) {
+		while((entry = readdir(directory)) != NULL) {
+			if(entry->d_name[0] == '.') {
+				continue;
+			}
+			names->push_back(string(path) + "/" + entry->d_name);
+		}
+		closedir(directory);
+	} else {
+		throw "Couldn't open directory";
+	}
+	return names;
+}
+
 //----------------------------------------------------------------------------
 // entry point
 int main(int argc, char **argv) {
@@ -205,8 +229,15 @@ int main(int argc, char **argv) {
 	width = 512;
 	height = 512;
 
-	PLYReader reader("meshes/airplane.ply");
-	Mesh* mesh = reader.read();
+	vector<string>* names = getFileNames("meshes");
+	vector<Mesh*> meshes = vector<Mesh*>();
+	for(vector<string>::const_iterator i = names->begin(); i != names->end(); ++i) {
+		PLYReader reader((*i).c_str());
+		meshes.push_back(reader.read());
+		cout << meshes[i - names->begin()]->getName() << endl;
+	}
+	
+
 
 	// If you are using freeglut, the next two lines will check if 
 	// the code is truly 3.2. Otherwise, comment them out

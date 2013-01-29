@@ -34,10 +34,12 @@ class PLYReader {
 		Mesh* mesh;
 		int verticesLeft;
 		int trianglesLeft;
+		const char* filename;
 
 	public:
-		PLYReader(const char* filename) {
-			content = string(textFileRead(filename));
+		PLYReader(const char* _filename) {
+			content = string(textFileRead(_filename));
+			filename = _filename;
 		}
 
 		// returns a Mesh containing data from ply file
@@ -75,14 +77,13 @@ class PLYReader {
 				return;
 			}
 
-			cout << line << endl;
 			stringstream ss(stringstream::in);
 			ss.str(line);
 			string garbage;
 			
 			if(startsWith(line, "element vertex")) {
 				ss >> garbage >> garbage >> verticesLeft;
-				mesh = new Mesh(verticesLeft);
+				mesh = new Mesh(filename, verticesLeft);
 				return;
 			}
 

@@ -4,6 +4,8 @@
 
 #include "Angel.h"
 
+using std::string;
+
 // holds vertex list and point data to be sent to GPU
 class Mesh {
 	private:
@@ -12,11 +14,17 @@ class Mesh {
 		unsigned vertIndex;
 		unsigned pointIndex;
 		unsigned numPoints;
+		string name;
 	
 	public:
-		Mesh(unsigned numVertices) {
+		Mesh(string _name, unsigned numVertices) {
+			name = _name;
 			vertices = new vec4[numVertices];
 			vertIndex = 0;
+		}
+
+		string getName() {
+			return name;
 		}
 
 		void addVertex(vec4 vert) {
