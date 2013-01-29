@@ -4,8 +4,6 @@ uniform mat4 projection_matrix;
 uniform mat4 model_matrix;
 
 in  vec4 vPosition;
-in  vec4 vColor;
-out vec4 interpolatedColor;
 
 void main() {
 	// PROTIP #3
@@ -18,5 +16,4 @@ void main() {
 	// however in rare circumstances the order of the transform may affect the numerical stability
 	// of the overall projection
 	gl_Position = projection_matrix*model_matrix*vPosition;
-	interpolatedColor = vColor;
 }
