@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "textfile.h"
+
 char *textFileRead(const char *fn) {
 	FILE *fp;
 	char *content = NULL;

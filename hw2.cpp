@@ -1,4 +1,6 @@
 #include "Angel.h"
+#include "Mesh.hpp"
+#include "PLYReader.hpp"
 
 int width = 0;
 int height = 0;
@@ -202,6 +204,10 @@ int main(int argc, char **argv) {
 	glutInitWindowSize(512, 512);
 	width = 512;
 	height = 512;
+
+	PLYReader reader("meshes/airplane.ply");
+	Mesh* mesh = reader.read();
+
 	// If you are using freeglut, the next two lines will check if 
 	// the code is truly 3.2. Otherwise, comment them out
 
@@ -233,3 +239,4 @@ int main(int argc, char **argv) {
 	glutMainLoop();
 	return 0;
 }
+
