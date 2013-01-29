@@ -24,11 +24,6 @@ class MeshRenderer {
 		int screenWidth;
 		int screenHeight;
 
-		void resetState() {
-			modelView = mat4(); //identity matrix by default
-			// TODO
-		}
-
 		void showMesh(unsigned index) {
 			currentMesh = meshes[index];
 			currentMeshIndex = index;
@@ -58,6 +53,12 @@ class MeshRenderer {
 			}
 		}
 
+		void resetState() {
+			modelView = mat4(); //identity matrix by default
+			translateDelta = vec3();
+			// TODO
+		}
+
 		void showPrevMesh() {
 			if(currentMeshIndex == 0) {
 				showMesh(meshes.size() - 1);
@@ -67,7 +68,11 @@ class MeshRenderer {
 		}
 
 		void idle() {
-
+			vec3* td = &translateDelta;
+			if(td->x != 0 || td->y != 0 || td->z != 0) {
+				modelView = modelView * Translate(td->x, td->y, td->z);
+				glutPostRedisplay();
+			}
 		}
 
 		void display() {

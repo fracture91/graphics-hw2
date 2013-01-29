@@ -51,6 +51,10 @@ void reshape(int screenWidth, int screenHeight) {
 	meshRenderer->reshape(screenWidth, screenHeight);
 }
 
+void idle(void) {
+	meshRenderer->idle();
+}
+
 //----------------------------------------------------------------------------
 
 // keyboard handler
@@ -59,11 +63,27 @@ void keyboard(unsigned char key, int x, int y) {
 		case 27: // ESC
 			exit(EXIT_SUCCESS);
 			break;
-		case 110: // N
+		case 119: // w
+			meshRenderer->resetState();
+			break;
+		case 110: // n
 			meshRenderer->showNextMesh();
 			break;
-		case 112: // P
+		case 112: // p
 			meshRenderer->showPrevMesh();
+			break;
+		case 88: // X
+		case 89: // Y
+		case 90: // Z
+		case 120: // x
+		case 121: // y
+		case 122: // z
+			bool uppercase = key < 91;
+			unsigned offset = key - 88;
+			if(!uppercase) {
+				offset -= 32;
+			}
+			meshRenderer->toggleTranslateDelta(offset, uppercase);
 			break;
 	}
 }
@@ -125,6 +145,7 @@ int main(int argc, char **argv) {
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
 	glutReshapeFunc(reshape);
+	glutIdleFunc(idle);
 	// should add menus
 	// add mouse handler
 	// add resize window functionality (should probably try to preserve aspect ratio)
