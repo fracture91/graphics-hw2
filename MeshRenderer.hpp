@@ -20,6 +20,7 @@ class MeshRenderer {
 		mat4 modelView;
 		mat4 projection;
 		vec3 translateDelta; // this will be added to modelView every time idle is called
+		bool showBoundingBox;
 
 		int screenWidth;
 		int screenHeight;
@@ -27,12 +28,18 @@ class MeshRenderer {
 		void showMesh(unsigned index) {
 			currentMesh = meshes[index];
 			currentMeshIndex = index;
-			vec4* points = currentMesh->getPoints();
-			unsigned numPoints = currentMesh->getNumPoints();
 			cout << currentMesh->getName() << endl;
+			
+			vec4* meshPoints = currentMesh->getPoints();
+			GLsizeiptr meshSize = sizeof(meshPoints[0]) * currentMesh->getNumPoints();
+			
+			BoundingBox* box = currentMesh->getBoundingBox();
+			vec4* boxPoints = box->getPoints();
+			GLsizeiptr boxSize = sizeof(boxPoints[0]) * box->getNumPoints();
 
-			glBufferData(GL_ARRAY_BUFFER, sizeof(points[0]) * numPoints, points,
-					GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, meshSize + boxSize, NULL, GL_STATIC_DRAW);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, meshSize, meshPoints);
+			glBufferSubData(GL_ARRAY_BUFFER, meshSize, boxSize, boxPoints);
 
 			resetState();
 			glutPostRedisplay();
@@ -42,6 +49,7 @@ class MeshRenderer {
 		MeshRenderer(vector<Mesh*> _meshes, GLuint _program) {
 			meshes = _meshes;
 			program = _program;
+			showBoundingBox = false;
 			showMesh(0);
 		}
 
@@ -54,8 +62,9 @@ class MeshRenderer {
 		}
 
 		void resetState() {
-			modelView = mat4(); //identity matrix by default
+			modelView = mat4() * RotateY(45.0f);
 			translateDelta = vec3();
+			glutPostRedisplay();
 			// TODO
 		}
 
@@ -65,6 +74,11 @@ class MeshRenderer {
 			} else {
 				showMesh(currentMeshIndex - 1);
 			}
+		}
+
+		void toggleBoundingBox() {
+			showBoundingBox = !showBoundingBox;
+			glutPostRedisplay();
 		}
 
 		void idle() {
@@ -78,7 +92,7 @@ class MeshRenderer {
 		void display() {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			
-			projection = Perspective(45.0, screenWidth/screenHeight, 0.1, 100.0);
+			projection = Perspective(45.0, screenWidth/screenHeight, 0.1, 500.0);
 			
 			// hook up matrices with shader
 			GLuint modelLoc = glGetUniformLocationARB(program, "model_matrix");
@@ -86,10 +100,15 @@ class MeshRenderer {
 			GLuint projLoc = glGetUniformLocationARB(program, "projection_matrix");
 			glUniformMatrix4fv(projLoc, 1, GL_TRUE, projection);
 			
+			GLsizeiptr totalPoints = currentMesh->getNumPoints();
+			if(showBoundingBox) {
+				totalPoints += currentMesh->getBoundingBox()->getNumPoints();
+			}
+
 			// draw triangles
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glEnable(GL_DEPTH_TEST);
-			glDrawArrays(GL_TRIANGLES, 0, currentMesh->getNumPoints());
+			glDrawArrays(GL_TRIANGLES, 0, totalPoints);
 			glDisable(GL_DEPTH_TEST); 
 
 			// output to hardware, double buffered

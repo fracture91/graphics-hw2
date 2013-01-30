@@ -72,6 +72,9 @@ void keyboard(unsigned char key, int x, int y) {
 		case 112: // p
 			meshRenderer->showPrevMesh();
 			break;
+		case 101: // e
+			meshRenderer->toggleBoundingBox();
+			break;
 		case 88: // X
 		case 89: // Y
 		case 90: // Z
