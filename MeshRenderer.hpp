@@ -57,15 +57,11 @@ class MeshRenderer {
 				return;
 			}
 			BoundingBox* box = currentMesh->getBoundingBox();
-			vec3 max = box->getMax();
-			vec3 min = box->getMin();
-			cout << max <<" "<< min << endl;
-			vec4 eye = vec4(max.x, max.y, max.z, 1);
-			vec4 at = vec4(min.x, min.y, min.z, 1);
-			cout << screenWidth << screenHeight << endl;
+			cout << box->getMax() <<" "<< box->getMin() << endl;
+			cout << box->getSize() << endl;
 			projection = mat4()
-				* Perspective(90, (float)screenWidth/screenHeight, 0.00001, 10000)
-				* LookAt(eye, at, vec4(0, 1, 0, 1));
+				* Perspective(90, (float)screenWidth/screenHeight, 0.0000001, 100000)
+				* LookAt(box->getMax() + box->getSize()/2, box->getMin(), vec4(0, 1, 0, 0));
 			cout << projection << endl;
 		}
 
