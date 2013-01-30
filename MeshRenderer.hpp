@@ -26,6 +26,7 @@ class MeshRenderer {
 		vec3 translation;
 		mat4 transMat;
 		mat4 rotMat;
+		int lastTicks;
 
 		int screenWidth;
 		int screenHeight;
@@ -62,7 +63,9 @@ class MeshRenderer {
 			vec4 eye = vec4(max.x, max.y, max.z, 1);
 			vec4 at = vec4(min.x, min.y, min.z, 1);
 			cout << screenWidth << screenHeight << endl;
-			projection = mat4() * Perspective(90, (float)screenWidth/screenHeight, 0.00001, 10000) * LookAt(eye, at, vec4(0, 1, 0, 1));
+			projection = mat4()
+				* Perspective(90, (float)screenWidth/screenHeight, 0.00001, 10000)
+				* LookAt(eye, at, vec4(0, 1, 0, 1));
 			cout << projection << endl;
 		}
 
@@ -71,6 +74,7 @@ class MeshRenderer {
 			meshes = _meshes;
 			program = _program;
 			showBoundingBox = false;
+			lastTicks = 0;
 			showMesh(0);
 		}
 
@@ -83,7 +87,6 @@ class MeshRenderer {
 			transMat = rotMat = mat4();
 			resetProjection();
 			glutPostRedisplay();
-			// TODO
 		}
 
 		void showPrevMesh() {
@@ -108,18 +111,28 @@ class MeshRenderer {
 		}
 
 		void idle() {
+			// scale animation delta by number of elapsed ticks
+			int ticks = glutGet(GLUT_ELAPSED_TIME);
+			if(lastTicks == 0) {
+				lastTicks = ticks;
+			}
+			int elapsed = ticks - lastTicks;
+			lastTicks = ticks;
+			
 			vec3* td = &translateDelta;
 			bool doTranslate = td->x != 0 || td->y != 0 || td->z != 0;
 			if(doTranslate) {
-				translation += *td;
+				translation += (*td) * elapsed;
 				transMat = Translate(translation);
 			}
+			
 			if(rotate) {
 				// move to origin, rotate, move back
 				vec4 center = currentMesh->getBoundingBox()->getCenter();
-				theta += 0.25;
+				theta += 0.25 * elapsed;
 				rotMat = Translate(center) * RotateY(theta) * Translate(-center);
 			}
+			
 			if(rotate || doTranslate) {
 				modelView = mat4() * transMat * rotMat;
 			}
