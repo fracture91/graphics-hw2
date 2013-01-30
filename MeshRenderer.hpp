@@ -21,6 +21,11 @@ class MeshRenderer {
 		mat4 projection;
 		vec3 translateDelta; // this will be added to modelView every time idle is called
 		bool showBoundingBox;
+		bool rotate;
+		float theta;
+		vec3 translation;
+		mat4 transMat;
+		mat4 rotMat;
 
 		int screenWidth;
 		int screenHeight;
@@ -45,6 +50,22 @@ class MeshRenderer {
 			glutPostRedisplay();
 		}
 
+		void resetProjection() {
+			if(screenHeight == 0) {
+				projection = mat4(); // don't want to divide by zero...
+				return;
+			}
+			BoundingBox* box = currentMesh->getBoundingBox();
+			vec3 max = box->getMax();
+			vec3 min = box->getMin();
+			cout << max <<" "<< min << endl;
+			vec4 eye = vec4(max.x, max.y, max.z, 1);
+			vec4 at = vec4(min.x, min.y, min.z, 1);
+			cout << screenWidth << screenHeight << endl;
+			projection = mat4() * Perspective(90, (float)screenWidth/screenHeight, 0.00001, 10000) * LookAt(eye, at, vec4(0, 1, 0, 1));
+			cout << projection << endl;
+		}
+
 	public:
 		MeshRenderer(vector<Mesh*> _meshes, GLuint _program) {
 			meshes = _meshes;
@@ -53,17 +74,14 @@ class MeshRenderer {
 			showMesh(0);
 		}
 
-		void showNextMesh() {
-			if(currentMeshIndex == meshes.size() - 1) {
-				showMesh(0);
-			} else {
-				showMesh(currentMeshIndex + 1);
-			}
-		}
-
 		void resetState() {
-			modelView = mat4() * RotateY(45.0f);
+			modelView = mat4();
 			translateDelta = vec3();
+			translation = vec3();
+			rotate = false;
+			theta = 0;
+			transMat = rotMat = mat4();
+			resetProjection();
 			glutPostRedisplay();
 			// TODO
 		}
@@ -76,6 +94,14 @@ class MeshRenderer {
 			}
 		}
 
+		void showNextMesh() {
+			if(currentMeshIndex == meshes.size() - 1) {
+				showMesh(0);
+			} else {
+				showMesh(currentMeshIndex + 1);
+			}
+		}
+
 		void toggleBoundingBox() {
 			showBoundingBox = !showBoundingBox;
 			glutPostRedisplay();
@@ -83,17 +109,26 @@ class MeshRenderer {
 
 		void idle() {
 			vec3* td = &translateDelta;
-			if(td->x != 0 || td->y != 0 || td->z != 0) {
-				modelView = modelView * Translate(td->x, td->y, td->z);
-				glutPostRedisplay();
+			bool doTranslate = td->x != 0 || td->y != 0 || td->z != 0;
+			if(doTranslate) {
+				translation += *td;
+				transMat = Translate(translation);
 			}
+			if(rotate) {
+				// move to origin, rotate, move back
+				vec4 center = currentMesh->getBoundingBox()->getCenter();
+				theta += 0.25;
+				rotMat = Translate(center) * RotateY(theta) * Translate(-center);
+			}
+			if(rotate || doTranslate) {
+				modelView = mat4() * transMat * rotMat;
+			}
+			glutPostRedisplay();
 		}
 
 		void display() {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			
-			projection = Perspective(45.0, screenWidth/screenHeight, 0.1, 500.0);
-			
+
 			// hook up matrices with shader
 			GLuint modelLoc = glGetUniformLocationARB(program, "model_matrix");
 			glUniformMatrix4fv(modelLoc, 1, GL_TRUE, modelView);
@@ -119,6 +154,8 @@ class MeshRenderer {
 		void reshape(int _screenWidth, int _screenHeight) {
 			screenWidth = _screenWidth;
 			screenHeight = _screenHeight;
+			glViewport(0, 0, screenWidth, screenHeight);
+			resetProjection();
 		}
 
 		void toggleTranslateDelta(unsigned offset, bool positive) {
@@ -126,8 +163,14 @@ class MeshRenderer {
 					|| (!positive && translateDelta[offset] < 0)) {
 				translateDelta[offset] = 0;
 			} else {
-				translateDelta[offset] = positive ? 1 : -1;
+				vec3 size = currentMesh->getBoundingBox()->getSize();
+				translateDelta[offset] = positive ? size[offset]/100 : size[offset]/-100;
 			}
+		}
+
+		void toggleRotate() {
+			rotate = !rotate;
+			glutPostRedisplay();
 		}
 
 };

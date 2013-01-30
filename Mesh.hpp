@@ -93,6 +93,10 @@ class BoundingBox {
 			return vec3(max);
 		}
 
+		vec4 getCenter() {
+			return min + getSize()/2;
+		}
+
 		~BoundingBox() {
 			delete vertices;
 			delete points;

@@ -80,13 +80,17 @@ void keyboard(unsigned char key, int x, int y) {
 		case 90: // Z
 		case 120: // x
 		case 121: // y
-		case 122: // z
+		case 122: { // z
 			bool uppercase = key < 91;
 			unsigned offset = key - 88;
 			if(!uppercase) {
 				offset -= 32;
 			}
 			meshRenderer->toggleTranslateDelta(offset, uppercase);
+			break;
+		}
+		case 114: // r
+			meshRenderer->toggleRotate();
 			break;
 	}
 }
