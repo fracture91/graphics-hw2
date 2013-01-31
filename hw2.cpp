@@ -1,4 +1,5 @@
 #ifdef _WIN32
+	#define NOMINMAX // otherwise windows.h redefines min and max...
 	#include "win_dirent.h"
 #else
 	#include "unix_dirent.h"
