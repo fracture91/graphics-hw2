@@ -31,10 +31,6 @@ GLuint setUpShaders(void) {
 	// Load shaders and use the resulting shader program
 	GLuint program = InitShader("vshader1.glsl", "fshader1.glsl");
 	glUseProgram(program);
-	// set up vertex arrays
-	GLuint vPosition = glGetAttribLocation(program, "vPosition");
-	glEnableVertexAttribArray(vPosition);
-	glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
 	// sets the default color to clear screen
 	glClearColor(0,0,0, 1.0); // black background
@@ -91,6 +87,9 @@ void keyboard(unsigned char key, int x, int y) {
 		}
 		case 114: // r
 			meshRenderer->toggleRotate();
+			break;
+		case 98: // b
+			meshRenderer->toggleBreathing();
 			break;
 	}
 }

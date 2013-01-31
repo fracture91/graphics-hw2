@@ -111,8 +111,24 @@ class Mesh {
 		unsigned vertIndex;
 		unsigned pointIndex;
 		unsigned numPoints;
+		vec4* normals;
 		string name;
 		BoundingBox* box;
+
+		// add 3 identical normal vectors to normals array using newell method
+		void addNormal(vec4 a, vec4 b, vec4 c) {
+			vec3 normal(0, 0, 0);
+			vec4 verts[3] = {a, b, c};
+			for(int i = 0; i < 3; i++) {
+				vec4 current = verts[i];
+				vec4 next = verts[(i + 1) % 3];
+				normal.x += (current.y - next.y)*(current.z + next.z);
+				normal.y += (current.z - next.z)*(current.x + next.x);
+				normal.z += (current.x - next.x)*(current.y + next.y);
+			}
+			normal = normalize(normal);
+			normals[pointIndex] = normals[pointIndex + 1] = normals[pointIndex + 2] = normal;
+		}
 	
 	public:
 		Mesh(string _name, unsigned numVertices) {
@@ -120,6 +136,7 @@ class Mesh {
 			vertices = new vec4[numVertices];
 			vertIndex = 0;
 			box = NULL;
+			normals = points = NULL;
 		}
 
 		string getName() {
@@ -139,13 +156,18 @@ class Mesh {
 		void startTriangles(unsigned numTriangles) {
 			numPoints = numTriangles * 3;
 			points = new vec4[numPoints];
+			normals = new vec4[numPoints];
 			pointIndex = 0;
 		}
 
 		void addTriangle(unsigned a, unsigned b, unsigned c) {
+			unsigned origIndex = pointIndex;
 			points[pointIndex] = vertices[a]; pointIndex++;
 			points[pointIndex] = vertices[b]; pointIndex++;
-			points[pointIndex] = vertices[c]; pointIndex++;
+			points[pointIndex] = vertices[c];
+			pointIndex = origIndex;
+			addNormal(vertices[a], vertices[b], vertices[c]);
+			pointIndex = origIndex + 3;
 		}
 
 		unsigned getNumPoints() {
@@ -156,13 +178,22 @@ class Mesh {
 			return points;
 		}
 
+		vec4* getNormals() {
+			return normals;
+		}
+
 		BoundingBox* getBoundingBox() {
 			return box;
 		}
 
 		~Mesh() {
 			delete vertices;
-			delete points;
+			if(points != NULL) {
+				delete points;
+			}
+			if(normals != NULL) {
+				delete normals;
+			}
 			if(box != NULL) {
 				delete box;
 			}

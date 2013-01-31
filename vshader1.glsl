@@ -2,8 +2,10 @@
 
 uniform mat4 projection_matrix;
 uniform mat4 model_matrix;
+uniform float normal_scale;
 
-in  vec4 vPosition;
+in vec4 vPosition;
+in vec4 normal;
 
 void main() {
 	// PROTIP #3
@@ -15,5 +17,6 @@ void main() {
 	// notice mathematically there is no difference
 	// however in rare circumstances the order of the transform may affect the numerical stability
 	// of the overall projection
-	gl_Position = projection_matrix*model_matrix*vPosition;
+	vec4 breathedPoint = vPosition + (normal_scale * normal);
+	gl_Position = projection_matrix*model_matrix*breathedPoint;
 }
