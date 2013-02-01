@@ -3,6 +3,7 @@
 #define __MESH_H_
 
 #include "Angel.h"
+#include <algorithm>
 
 using std::string;
 using std::cout;
@@ -85,6 +86,11 @@ class BoundingBox {
 			return max - min;
 		}
 
+		float getMaxSize() {
+			vec3 size = getSize();
+			return std::max(std::max(size[0], size[1]), size[2]);
+		}
+
 		vec3 getMin() {
 			return vec3(min);
 		}
@@ -110,14 +116,20 @@ class Mesh {
 		vec4* points;
 		unsigned vertIndex;
 		unsigned pointIndex;
+		unsigned lineIndex;
 		unsigned numPoints;
+		unsigned numNormalLinePoints;
 		vec4* normals;
 		string name;
 		BoundingBox* box;
+		vec4* normalLines;
+		float maxSize;
 
 		// add 3 identical normal vectors to normals array using newell method
+		// also add line segments to normalLines
 		void addNormal(vec4 a, vec4 b, vec4 c) {
-			vec3 normal(0, 0, 0);
+			vec4 normal(0, 0, 0, 0);
+			// newell method
 			vec4 verts[3] = {a, b, c};
 			for(int i = 0; i < 3; i++) {
 				vec4 current = verts[i];
@@ -127,7 +139,19 @@ class Mesh {
 				normal.z += (current.x - next.x)*(current.y + next.y);
 			}
 			normal = normalize(normal);
+			normal.w = 1;
 			normals[pointIndex] = normals[pointIndex + 1] = normals[pointIndex + 2] = normal;
+			
+			// add a line to normalLines by finding center of face,
+			// adding a line through center along normal extending out by maxSize
+			if(maxSize == 0) {
+				maxSize = box->getMaxSize();
+			}
+			vec4 center = (a + b + c) / 3;
+			normalLines[lineIndex] = center;
+			normalLines[++lineIndex] = center + (maxSize/20 * normal);
+			normalLines[lineIndex - 1].w = 1;
+			lineIndex++;
 		}
 	
 	public:
@@ -135,8 +159,9 @@ class Mesh {
 			name = _name;
 			vertices = new vec4[numVertices];
 			vertIndex = 0;
+			maxSize = 0;
 			box = NULL;
-			normals = points = NULL;
+			normals = points = normalLines = NULL;
 		}
 
 		string getName() {
@@ -148,16 +173,18 @@ class Mesh {
 			vertIndex++;
 			if(box == NULL) {
 				box = new BoundingBox(vert);
-			} else {
-				box->addContainedVertex(vert);
 			}
+			box->addContainedVertex(vert);
 		}
 
 		void startTriangles(unsigned numTriangles) {
 			numPoints = numTriangles * 3;
 			points = new vec4[numPoints];
 			normals = new vec4[numPoints];
+			numNormalLinePoints = numTriangles * 2; // two points per face
+			normalLines = new vec4[numNormalLinePoints];
 			pointIndex = 0;
+			lineIndex = 0;
 		}
 
 		void addTriangle(unsigned a, unsigned b, unsigned c) {
@@ -174,12 +201,20 @@ class Mesh {
 			return numPoints;
 		}
 
+		unsigned getNumNormalLinePoints() {
+			return numNormalLinePoints;
+		}
+
 		vec4* getPoints() {
 			return points;
 		}
 
 		vec4* getNormals() {
 			return normals;
+		}
+
+		vec4* getNormalLines() {
+			return normalLines;
 		}
 
 		BoundingBox* getBoundingBox() {

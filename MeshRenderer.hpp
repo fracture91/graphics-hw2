@@ -21,6 +21,8 @@ class MeshRenderer {
 
 		GLsizeiptr meshLength;
 		GLsizeiptr boxLength;
+		GLsizeiptr normalLength;
+		GLsizeiptr lineLength;
 		GLsizeiptr triangleLength;
 		
 		mat4 modelView;
@@ -48,38 +50,44 @@ class MeshRenderer {
 			currentMeshIndex = index;
 			cout << currentMesh->getName() << endl;
 			
+			meshLength = currentMesh->getNumPoints();
 			vec4* meshPoints = currentMesh->getPoints();
-			GLsizeiptr meshBytes = sizeof(meshPoints[0]) * currentMesh->getNumPoints();
+			GLsizeiptr meshBytes = sizeof(meshPoints[0]) * meshLength;
 			
 			BoundingBox* box = currentMesh->getBoundingBox();
+			boxLength = box->getNumPoints();
 			vec4* boxPoints = box->getPoints();
-			GLsizeiptr boxBytes = sizeof(boxPoints[0]) * box->getNumPoints();
+			GLsizeiptr boxBytes = sizeof(boxPoints[0]) * boxLength;
 
 			vec4* normals = currentMesh->getNormals();
+			normalLength = meshLength;
 			GLsizeiptr normalBytes = meshBytes;
-			cout << "normal " << normals[0] << normals[1] << normals[2] << normals[3] << endl;
 
-			GLsizeiptr totalBytes = meshBytes + boxBytes + normalBytes;
+			vec4* lines = currentMesh->getNormalLines();
+			lineLength = currentMesh->getNumNormalLinePoints();
+			GLsizeiptr lineBytes = sizeof(lines[0]) * lineLength;
+
+			GLsizeiptr totalBytes = meshBytes + boxBytes + normalBytes + lineBytes;
 			glBufferData(GL_ARRAY_BUFFER, totalBytes, NULL, GL_STATIC_DRAW);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, meshBytes, meshPoints);
 			glBufferSubData(GL_ARRAY_BUFFER, meshBytes, boxBytes, boxPoints);
 			glBufferSubData(GL_ARRAY_BUFFER, meshBytes + boxBytes, normalBytes, normals);
+			glBufferSubData(GL_ARRAY_BUFFER, meshBytes + boxBytes + normalBytes, lineBytes, lines);
 
 			// set up vertex arrays
 			GLuint posLoc = glGetAttribLocation(program, "vPosition");
 			glEnableVertexAttribArray(posLoc);
 			glVertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 			
-			meshLength = currentMesh->getNumPoints();
-			boxLength = currentMesh->getBoundingBox()->getNumPoints();
 			triangleLength = meshLength + boxLength;
+			GLsizeiptr normalOffset = triangleLength * sizeof(currentMesh->getPoints()[0]);
 
 			// set up normal array, which is after all triangles
 			GLuint normalLoc = glGetAttribLocation(program, "normal");
 			glEnableVertexAttribArray(normalLoc);
 			glVertexAttribPointer(normalLoc, 4, GL_FLOAT, GL_FALSE, 0,
-					BUFFER_OFFSET(triangleLength * sizeof(currentMesh->getPoints()[0])));
-			
+					BUFFER_OFFSET(normalOffset));
+
 			resetState();
 			glutPostRedisplay();
 		}
@@ -90,17 +98,13 @@ class MeshRenderer {
 				return;
 			}
 			BoundingBox* box = currentMesh->getBoundingBox();
-			cout << box->getMax() <<" "<< box->getMin() << endl;
-			cout << box->getSize() << endl;
 			projection = mat4()
 				* Perspective(90, (float)screenWidth/screenHeight, 0.0000001, 100000)
 				* LookAt(box->getMax() + box->getSize()/2, box->getMin(), vec4(0, 1, 0, 0));
-			cout << projection << endl;
 		}
 
 		void resetBreatheState() {
-			vec3 size = currentMesh->getBoundingBox()->getSize();
-			maxSize = std::max(std::max(size[0], size[1]), size[2]);
+			maxSize = currentMesh->getBoundingBox()->getMaxSize();
 			normalDelta = maxSize/10000;
 			normalScale = 0;
 		}
@@ -112,6 +116,7 @@ class MeshRenderer {
 			program = _program;
 			showBoundingBox = false;
 			breathe = false;
+			showNormals = false;
 			lastTicks = 0;
 			showMesh(0);
 		}
@@ -169,7 +174,6 @@ class MeshRenderer {
 					normalScale = maxSize/100;
 					normalDelta = -normalDelta;
 				}
-				cout << "ns " << normalScale << endl;
 			}
 
 			vec3* td = &translateDelta;
@@ -202,21 +206,21 @@ class MeshRenderer {
 			glUniformMatrix4fv(modelLoc, 1, GL_TRUE, modelView);
 			GLuint projLoc = glGetUniformLocationARB(program, "projection_matrix");
 			glUniformMatrix4fv(projLoc, 1, GL_TRUE, projection);
-			
 
 			GLuint scaleLoc = glGetUniformLocation(program, "normal_scale");
 			glUniform1f(scaleLoc, normalScale);
 
-			GLsizeiptr pointsToDraw = triangleLength;
-
-			if(!showBoundingBox) {
-				pointsToDraw -= boxLength;
-			}
-
 			// draw triangles
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glEnable(GL_DEPTH_TEST);
-			glDrawArrays(GL_TRIANGLES, 0, pointsToDraw);
+			glDrawArrays(GL_TRIANGLES, 0, meshLength);
+			glUniform1f(scaleLoc, 0); // everything after this is unscaled
+			if(showBoundingBox) {
+				glDrawArrays(GL_TRIANGLES, meshLength, boxLength);
+			}
+			if(showNormals) {
+				glDrawArrays(GL_LINES, meshLength + boxLength + normalLength, lineLength);
+			}
 			glDisable(GL_DEPTH_TEST); 
 
 			// output to hardware, double buffered
@@ -248,6 +252,7 @@ class MeshRenderer {
 
 		void toggleNormals() {
 			showNormals = !showNormals;
+			glutPostRedisplay();
 		}
 
 		void toggleBreathing() {

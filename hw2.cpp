@@ -92,6 +92,9 @@ void keyboard(unsigned char key, int x, int y) {
 		case 98: // b
 			meshRenderer->toggleBreathing();
 			break;
+		case 109: // m
+			meshRenderer->toggleNormals();
+			break;
 	}
 }
 

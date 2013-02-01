@@ -64,7 +64,6 @@ class PLYReader {
 		}
 
 		void parseLine(string line, unsigned lineNum) {
-			
 			if(lineNum == 0) {
 				if(!startsWith(line, "ply")) {
 					throw ReaderException("Line 0 doesn't start with Ply");
