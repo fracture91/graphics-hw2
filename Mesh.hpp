@@ -139,7 +139,6 @@ class Mesh {
 				normal.z += (current.x - next.x)*(current.y + next.y);
 			}
 			normal = normalize(normal);
-			normal.w = 1;
 			normals[pointIndex] = normals[pointIndex + 1] = normals[pointIndex + 2] = normal;
 			
 			// add a line to normalLines by finding center of face,
@@ -150,7 +149,6 @@ class Mesh {
 			vec4 center = (a + b + c) / 3;
 			normalLines[lineIndex] = center;
 			normalLines[++lineIndex] = center + (maxSize/20 * normal);
-			normalLines[lineIndex - 1].w = 1;
 			lineIndex++;
 		}
 	
